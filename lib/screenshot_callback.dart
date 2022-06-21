@@ -1,18 +1,20 @@
 import 'dart:io';
 import 'dart:async';
-
-import 'package:flutter/scheduler.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
-
-abstract class IScreenshotCallback {
-  void onListener();
-}
 
 class ScreenshotCallback {
   static const MethodChannel _channel =
       const MethodChannel('flutter.moum/screenshot_callback');
-  final IScreenshotCallback callback;
+  static const EventChannel _eventChannel =
+      const EventChannel('flutter.moum/screenshot_callback_events');
+
+  static Stream<String?> get onEvent =>
+      _eventChannel.receiveBroadcastStream().map(_receiveCallEvent);
+
+  /// Functions to execute when callback fired.
+  List<VoidCallback> onCallbacks = <VoidCallback>[];
 
   /// If `true`, the user will be asked to grant storage permissions when
   /// callback is added.
@@ -20,11 +22,15 @@ class ScreenshotCallback {
   /// Defaults to `true`.
   bool requestPermissions;
 
-  ScreenshotCallback(
-    this.callback, {
+  ScreenshotCallback({
     this.requestPermissions = true,
   }) {
     initialize();
+  }
+
+  static String? _receiveCallEvent(dynamic data) {
+    var event = data;
+    return event;
   }
 
   /// Initializes screenshot callback plugin.
@@ -32,17 +38,24 @@ class ScreenshotCallback {
     if (Platform.isAndroid && requestPermissions) {
       await checkPermission();
     }
-    _channel.setMethodCallHandler(_handleMethod);
+    if (Platform.isIOS) {
+      _channel.setMethodCallHandler(_handleMethod);
+      return;
+    }
     await _channel.invokeMethod('initialize');
   }
 
   /// Add void callback.
-  void addListener(VoidCallback callback) {}
+  void addListener(VoidCallback callback) {
+    onCallbacks.add(callback);
+  }
 
   Future<dynamic> _handleMethod(MethodCall call) async {
     switch (call.method) {
       case 'onCallback':
-        callback.onListener();
+        for (final callback in onCallbacks) {
+          callback();
+        }
         print('===========================================onCallback');
         break;
       default:

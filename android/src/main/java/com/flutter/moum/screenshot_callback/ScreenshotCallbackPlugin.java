@@ -3,6 +3,7 @@ package com.flutter.moum.screenshot_callback;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
@@ -10,6 +11,7 @@ import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.plugin.common.BinaryMessenger;
+import io.flutter.plugin.common.EventChannel;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -19,6 +21,7 @@ import kotlin.jvm.functions.Function1;
 
 public class ScreenshotCallbackPlugin implements MethodCallHandler, FlutterPlugin {
     private static MethodChannel channel;
+    private static EventChannel event;
     private static final String ttag = "screenshot_callback";
 
     private Context applicationContext;
@@ -26,6 +29,14 @@ public class ScreenshotCallbackPlugin implements MethodCallHandler, FlutterPlugi
     private Handler handler;
     private ScreenshotDetector detector;
     private String lastScreenshotName;
+
+
+    private EventCallbackHandler eventHandler = new EventCallbackHandler();
+
+    void sendEvent(String event) {
+        eventHandler.send(event);
+    }
+
 
     @Override
     public void onAttachedToEngine(@NonNull FlutterPluginBinding binding) {
@@ -35,7 +46,9 @@ public class ScreenshotCallbackPlugin implements MethodCallHandler, FlutterPlugi
     private void onAttachedToEngine(Context applicationContext, BinaryMessenger messenger) {
         this.applicationContext = applicationContext;
         channel = new MethodChannel(messenger, "flutter.moum/screenshot_callback");
+        event = new EventChannel(messenger, "flutter.moum/screenshot_callback_events");
         channel.setMethodCallHandler(this);
+        event.setStreamHandler(eventHandler);
     }
 
     @Override
@@ -59,7 +72,7 @@ public class ScreenshotCallbackPlugin implements MethodCallHandler, FlutterPlugi
                         handler.post(new Runnable() {
                             @Override
                             public void run() {
-                                channel.invokeMethod("onCallback", null);
+                                sendEvent("onCallback");
                             }
                         });
                     }
@@ -79,4 +92,5 @@ public class ScreenshotCallbackPlugin implements MethodCallHandler, FlutterPlugi
             result.notImplemented();
         }
     }
+
 }

@@ -8,7 +8,7 @@ class MyApp extends StatefulWidget {
   _MyAppState createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp>implements IScreenshotCallback {
+class _MyAppState extends State<MyApp> {
   late ScreenshotCallback screenshotCallback;
 
   String text = "Ready..";
@@ -16,7 +16,6 @@ class _MyAppState extends State<MyApp>implements IScreenshotCallback {
   @override
   void initState() {
     super.initState();
-
     init();
   }
 
@@ -26,7 +25,16 @@ class _MyAppState extends State<MyApp>implements IScreenshotCallback {
 
   //It must be created after permission is granted.
   Future<void> initScreenshotCallback() async {
-    screenshotCallback = ScreenshotCallback(this);
+    screenshotCallback = ScreenshotCallback();
+    screenshotCallback.addListener(() {
+      //TODO IN IOS
+    });
+    ScreenshotCallback.onEvent.listen((event) {
+      //TODO IN ANDROID
+      setState(() {
+        text = "Screenshot callback Fired!";
+      });
+    });
   }
 
   @override
@@ -50,12 +58,5 @@ class _MyAppState extends State<MyApp>implements IScreenshotCallback {
         ),
       ),
     );
-  }
-
-  @override
-  void onListener() {
-    setState(() {
-      text = "Screenshot callback Fired!";
-    });
   }
 }
