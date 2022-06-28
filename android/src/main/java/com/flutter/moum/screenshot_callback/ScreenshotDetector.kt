@@ -3,111 +3,64 @@ package com.flutter.moum.screenshot_callback
 import android.content.ContentResolver
 import android.content.Context
 import android.database.ContentObserver
+import android.icu.util.TimeUnit.values
 import android.net.Uri
 import android.os.Build
+import android.os.FileObserver
 import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
+import java.io.File
+
+import java.time.chrono.JapaneseEra.values
+
 
 class ScreenshotDetector(
     private val context: Context,
     private val callback: (name: String) -> Unit
 ) {
-
+    private var handler: Handler? = null
+    private var fileObserver: FileObserver? = null
     private var contentObserver: ContentObserver? = null
 
     fun start() {
-        if (contentObserver == null) {
-            contentObserver = context.contentResolver.registerObserver()
+
+        handler = Handler(Looper.getMainLooper())
+        if (Build.VERSION.SDK_INT >= 29) {
+            //Log.d(TAG, "android x");
+            val files: MutableList<File> = ArrayList()
+            for (path in Path.values()) {
+                files.add(File(path.path))
+            }
+            fileObserver = object : FileObserver(files, CREATE) {
+                override fun onEvent(event: Int, path: String?) {
+                    //Log.d(TAG, "androidX onEvent");
+                    if (event == CREATE) {
+                        handler?.post(Runnable {
+                            callback.invoke("callback")
+                        })
+                    }
+                }
+            }
+            fileObserver?.startWatching()
+        } else {
+            //Log.d(TAG, "android others");
+            for (path in Path.values()) {
+                //Log.d(TAG, "onMethodCall: "+path.getPath());
+                fileObserver = object : FileObserver(path.path, CREATE) {
+                    override fun onEvent(event: Int, path: String?) {
+                        //Log.d(TAG, "android others onEvent");
+                        if (event == CREATE) {
+                            callback.invoke("callback")
+                        }
+                    }
+                }
+                fileObserver?.startWatching()
+            }
         }
     }
 
     fun stop() {
-        contentObserver?.let { context.contentResolver.unregisterContentObserver(it) }
-        contentObserver = null
-    }
-
-    private fun reportScreenshotsUpdate(uri: Uri) {
-        val screenshots: List<String> = queryScreenshots(uri)
-        if (screenshots.isNotEmpty()) {
-            callback.invoke(screenshots.last());
-        }
-    }
-
-    private fun queryScreenshots(uri: Uri): List<String> {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            queryRelativeDataColumn(uri)
-        } else {
-            queryDataColumn(uri)
-        }
-    }
-
-    private fun queryDataColumn(uri: Uri): List<String> {
-        val screenshots = mutableListOf<String>()
-
-        val projection = arrayOf(
-            MediaStore.Images.Media.DATA
-        )
-        context.contentResolver.query(
-            uri,
-            projection,
-            null,
-            null,
-            null
-        )?.use { cursor ->
-            val dataColumn = cursor.getColumnIndex(MediaStore.Images.Media.DATA)
-
-            while (cursor.moveToNext()) {
-                val path = cursor.getString(dataColumn)
-                if (path.contains("screenshot", true)) {
-                    screenshots.add(path)
-                }
-            }
-        }
-
-        return screenshots
-    }
-
-    private fun queryRelativeDataColumn(uri: Uri): List<String> {
-        val screenshots = mutableListOf<String>()
-
-        val projection = arrayOf(
-            MediaStore.Images.Media.DISPLAY_NAME,
-            MediaStore.Images.Media.RELATIVE_PATH
-        )
-        context.contentResolver.query(
-            uri,
-            projection,
-            null,
-            null,
-            null
-        )?.use { cursor ->
-            val relativePathColumn =
-                cursor.getColumnIndex(MediaStore.Images.Media.RELATIVE_PATH)
-            val displayNameColumn =
-                cursor.getColumnIndex(MediaStore.Images.Media.DISPLAY_NAME)
-            while (cursor.moveToNext()) {
-                val name = cursor.getString(displayNameColumn)
-                val relativePath = cursor.getString(relativePathColumn)
-                if (name.contains("screenshot", true) or
-                    relativePath.contains("screenshot", true)
-                ) {
-                    screenshots.add(name)
-                }
-            }
-        }
-
-        return screenshots
-    }
-
-    private fun ContentResolver.registerObserver(): ContentObserver {
-        val contentObserver = object : ContentObserver(Handler(Looper.getMainLooper())) {
-            override fun onChange(selfChange: Boolean, uri: Uri?) {
-                super.onChange(selfChange, uri)
-                uri?.let { reportScreenshotsUpdate(it) }
-            }
-        }
-        registerContentObserver(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, true, contentObserver)
-        return contentObserver
+        fileObserver?.let {it.stopWatching() }
     }
 }
