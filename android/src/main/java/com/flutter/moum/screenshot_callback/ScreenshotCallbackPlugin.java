@@ -81,8 +81,6 @@ public class ScreenshotCallbackPlugin implements MethodCallHandler, FlutterPlugi
         } else if (call.method.equals("dispose")) {
             detector.stop();
             detector = null;
-            lastScreenshotName = null;
-
             result.success("dispose");
         } else {
             result.notImplemented();

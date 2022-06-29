@@ -10,6 +10,7 @@ import android.os.FileObserver
 import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
+import android.util.Log
 import java.io.File
 
 import java.time.chrono.JapaneseEra.values
@@ -21,10 +22,8 @@ class ScreenshotDetector(
 ) {
     private var handler: Handler? = null
     private var fileObserver: FileObserver? = null
-    private var contentObserver: ContentObserver? = null
 
     fun start() {
-
         handler = Handler(Looper.getMainLooper())
         if (Build.VERSION.SDK_INT >= 29) {
             //Log.d(TAG, "android x");
@@ -34,7 +33,7 @@ class ScreenshotDetector(
             }
             fileObserver = object : FileObserver(files, CREATE) {
                 override fun onEvent(event: Int, path: String?) {
-                    //Log.d(TAG, "androidX onEvent");
+                    Log.d("111111111", "androidX onEvent");
                     if (event == CREATE) {
                         handler?.post(Runnable {
                             callback.invoke("callback")
@@ -61,6 +60,6 @@ class ScreenshotDetector(
     }
 
     fun stop() {
-        fileObserver?.let {it.stopWatching() }
+        fileObserver?.let { it.stopWatching() }
     }
 }
