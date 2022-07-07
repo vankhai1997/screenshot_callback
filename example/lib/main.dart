@@ -29,12 +29,12 @@ class _MyAppState extends State<MyApp> {
     screenshotCallback.addListener(() {
       //TODO IN IOS
     });
-    ScreenshotCallback.onEvent.listen((event) {
-      //TODO IN ANDROID
-      setState(() {
-        text = "Screenshot callback Fired!";
-      });
-    });
+    // ScreenshotCallback.onEvent?.listen((event) {
+    //   //TODO IN ANDROID
+    //   setState(() {
+    //     text = "Screenshot callback Fired!";
+    //   });
+    // });
   }
 
   @override

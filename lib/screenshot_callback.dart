@@ -6,12 +6,8 @@ import 'package:permission_handler/permission_handler.dart';
 
 class ScreenshotCallback {
   static const MethodChannel _channel =
-      const MethodChannel('flutter.moum/screenshot_callback');
-  static const EventChannel _eventChannel =
-      const EventChannel('flutter.moum/screenshot_callback_events');
-
-  static Stream<String?> get onEvent =>
-      _eventChannel.receiveBroadcastStream().map(_receiveCallEvent);
+  const MethodChannel('flutter.moum/screenshot_callback');
+  static EventChannel? _eventChannel;
 
   /// Functions to execute when callback fired.
   List<VoidCallback> onCallbacks = <VoidCallback>[];
@@ -40,7 +36,12 @@ class ScreenshotCallback {
     }
     if (Platform.isIOS) {
       _channel.setMethodCallHandler(_handleMethod);
-      return;
+    } else {
+      _eventChannel =
+      const EventChannel('flutter.moum/screenshot_callback_events');
+      _eventChannel?.receiveBroadcastStream().listen((event) {
+        onCallbacks.add(() {});
+      });
     }
     await _channel.invokeMethod('initialize');
   }
