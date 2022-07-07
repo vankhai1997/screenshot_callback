@@ -3,12 +3,14 @@ import UIKit
 
 public class SwiftScreenshotCallbackPlugin: NSObject, FlutterPlugin {
   static var channel: FlutterMethodChannel?
-    
+   static var eventChannel: FlutterEventChannel? = nil
+
   static var observer: NSObjectProtocol?;
     
 
   public static func register(with registrar: FlutterPluginRegistrar) {
     channel  = FlutterMethodChannel(name: "flutter.moum/screenshot_callback", binaryMessenger: registrar.messenger())
+    eventChannel = FlutterEventChannel(name: "flutter.moum/screenshot_callback_events", binaryMessenger: registrar.messenger())
     observer = nil;
     let instance = SwiftScreenshotCallbackPlugin()
     if let channel = channel {
